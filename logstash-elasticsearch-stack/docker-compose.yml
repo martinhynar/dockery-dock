@@ -1,0 +1,80 @@
+version: '2'
+
+services:
+  elasticsearch_master:
+    image: elasticsearch:2.4.2
+    command: "elasticsearch -Des.cluster.name=eso -Des.node.name=M1 -Des.node.master=true -Des.node.data=false"
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    environment:
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+    networks:
+      - docker_net
+    tty: false
+    stdin_open: false
+  elasticsearch_data_1:
+    image: elasticsearch:2.4.2
+    command: "elasticsearch -Des.cluster.name=eso -Des.node.name=D1 -Des.discovery.zen.ping.unicast.hosts=elasticsearch_master -Des.node.master=false -Des.node.data=true"
+    ports:
+      - "9201:9200"
+    links:
+      - elasticsearch_master
+    environment:
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+    volumes:
+      - "/opt/elasticsearch/data"
+    networks:
+      - docker_net
+    tty: false
+    stdin_open: false
+  elasticsearch_data_2:
+    image: elasticsearch:2.4.2
+    command: "elasticsearch -Des.cluster.name=eso -Des.node.name=D2 -Des.discovery.zen.ping.unicast.hosts=elasticsearch_master -Des.node.master=false -Des.node.data=true"
+    ports:
+      - "9202:9200"
+    links:
+      - elasticsearch_master
+    environment:
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+    volumes:
+      - "/opt/elasticsearch/data"
+    networks:
+      - docker_net
+    tty: false
+    stdin_open: false
+  elasticsearch_data_3:
+    image: elasticsearch:2.4.2
+    command: "elasticsearch -Des.cluster.name=eso -Des.node.name=D3 -Des.discovery.zen.ping.unicast.hosts=elasticsearch_master -Des.node.master=false -Des.node.data=true"
+    ports:
+      - "9203:9200"
+    links:
+      - elasticsearch_master
+    environment:
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+    volumes:
+      - "/opt/elasticsearch/data"
+    networks:
+      - docker_net
+    tty: false
+    stdin_open: false
+  logstash:
+    image: logstash:2.3.4
+#    command: "-f /etc/logstash/conf.d/ --debug"
+    command: "-f /etc/logstash/conf.d/"
+    volumes:
+      - ./logstash/config:/etc/logstash/conf.d
+    ports:
+      - "1984:1984"
+    links:
+      - "elasticsearch_data_1:es1"
+      - "elasticsearch_data_2:es2"
+      - "elasticsearch_data_3:es3"
+    networks:
+      - docker_net
+    depends_on:
+      - elasticsearch_data_1
+
+networks:
+  docker_net:
+    driver: bridge

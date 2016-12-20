@@ -2,26 +2,30 @@ version: '2'
 
 services:
   elasticsearch_master:
-    image: elasticsearch:2.4.2
-    command: "elasticsearch -Des.cluster.name=eso -Des.node.name=M1 -Des.node.master=true -Des.node.data=false"
+    build:
+      context: elasticsearch/
+      args:
+        nodename: M1
+        master: 1
+        data: 0
     ports:
       - "9200:9200"
       - "9300:9300"
-    environment:
-      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
     networks:
       - docker_net
     tty: false
     stdin_open: false
   elasticsearch_data_1:
-    image: elasticsearch:2.4.2
-    command: "elasticsearch -Des.cluster.name=eso -Des.node.name=D1 -Des.discovery.zen.ping.unicast.hosts=elasticsearch_master -Des.node.master=false -Des.node.data=true"
+    build:
+      context: elasticsearch/
+      args:
+        nodename: D1
+        master: 0
+        data: 1
     ports:
       - "9201:9200"
     links:
       - elasticsearch_master
-    environment:
-      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
     volumes:
       - "/opt/elasticsearch/data"
     networks:
@@ -29,29 +33,16 @@ services:
     tty: false
     stdin_open: false
   elasticsearch_data_2:
-    image: elasticsearch:2.4.2
-    command: "elasticsearch -Des.cluster.name=eso -Des.node.name=D2 -Des.discovery.zen.ping.unicast.hosts=elasticsearch_master -Des.node.master=false -Des.node.data=true"
+    build:
+      context: elasticsearch/
+      args:
+        nodename: D2
+        master: 0
+        data: 1
     ports:
       - "9202:9200"
     links:
       - elasticsearch_master
-    environment:
-      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
-    volumes:
-      - "/opt/elasticsearch/data"
-    networks:
-      - docker_net
-    tty: false
-    stdin_open: false
-  elasticsearch_data_3:
-    image: elasticsearch:2.4.2
-    command: "elasticsearch -Des.cluster.name=eso -Des.node.name=D3 -Des.discovery.zen.ping.unicast.hosts=elasticsearch_master -Des.node.master=false -Des.node.data=true"
-    ports:
-      - "9203:9200"
-    links:
-      - elasticsearch_master
-    environment:
-      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
     volumes:
       - "/opt/elasticsearch/data"
     networks:
@@ -69,11 +60,18 @@ services:
     links:
       - "elasticsearch_data_1:es1"
       - "elasticsearch_data_2:es2"
-      - "elasticsearch_data_3:es3"
     networks:
       - docker_net
     depends_on:
       - elasticsearch_data_1
+  kibana:
+    image: kibana:4.6.1
+    ports:
+      - "5601:5601"
+    links:
+      - "elasticsearch_master:elasticsearch"
+    networks:
+      - docker_net
 
 networks:
   docker_net:

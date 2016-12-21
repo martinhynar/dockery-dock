@@ -4,13 +4,12 @@ services:
   elasticsearch_master:
     build:
       context: elasticsearch/
-      args:
-        nodename: M1
-        master: 1
-        data: 0
+    command: elasticsearch -Dnode.name=M1 -Dnode.master=1 -Dnode.data=0
     ports:
       - "9200:9200"
       - "9300:9300"
+    volumes:
+      - ./elasticsearch/config:/etc/elasticsearch
     networks:
       - docker_net
     tty: false
@@ -18,33 +17,14 @@ services:
   elasticsearch_data_1:
     build:
       context: elasticsearch/
-      args:
-        nodename: D1
-        master: 0
-        data: 1
+    command: elasticsearch -Dnode.name=D1 -Dnode.master=0 -Dnode.data=1 -Ddiscovery.zen.ping.unicast.hosts=elasticsearch_master
     ports:
       - "9201:9200"
     links:
       - elasticsearch_master
     volumes:
       - "/opt/elasticsearch/data"
-    networks:
-      - docker_net
-    tty: false
-    stdin_open: false
-  elasticsearch_data_2:
-    build:
-      context: elasticsearch/
-      args:
-        nodename: D2
-        master: 0
-        data: 1
-    ports:
-      - "9202:9200"
-    links:
-      - elasticsearch_master
-    volumes:
-      - "/opt/elasticsearch/data"
+      - ./elasticsearch/config:/etc/elasticsearch
     networks:
       - docker_net
     tty: false
@@ -59,7 +39,6 @@ services:
       - "1984:1984"
     links:
       - "elasticsearch_data_1:es1"
-      - "elasticsearch_data_2:es2"
     networks:
       - docker_net
     depends_on:
@@ -71,6 +50,8 @@ services:
       - "5601:5601"
     links:
       - "elasticsearch_master:elasticsearch"
+    depends_on:
+      - elasticsearch_master
     networks:
       - docker_net
 

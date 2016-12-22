@@ -9,7 +9,7 @@ services:
       - "9200:9200"
       - "9300:9300"
     volumes:
-      - ./elasticsearch/config:/etc/elasticsearch
+      - ./elasticsearch/conf:/etc/elasticsearch
     networks:
       - docker_net
     tty: false
@@ -24,17 +24,17 @@ services:
       - elasticsearch_master
     volumes:
       - "/opt/elasticsearch/data"
-      - ./elasticsearch/config:/etc/elasticsearch
+      - ./elasticsearch/conf:/etc/elasticsearch
     networks:
       - docker_net
     tty: false
     stdin_open: false
   logstash:
     image: logstash:2.3.4
-#    command: "-f /etc/logstash/conf.d/ --debug"
-    command: "-f /etc/logstash/conf.d/"
+    command: "-f /etc/logstash/conf.d/ --debug"
+#    command: "-f /etc/logstash/conf.d/"
     volumes:
-      - ./logstash/config:/etc/logstash/conf.d
+      - ./logstash/conf:/etc/logstash/conf.d
     ports:
       - "1984:1984"
     links:

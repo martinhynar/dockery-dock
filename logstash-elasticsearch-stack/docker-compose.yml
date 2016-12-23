@@ -6,8 +6,7 @@ services:
       context: elasticsearch/
     command: elasticsearch -Dnode.name=M1 -Dnode.master=1 -Dnode.data=0
     ports:
-      - "9200:9200"
-      - "9300:9300"
+      - "9210:9200"
     volumes:
       - ./elasticsearch/conf:/etc/elasticsearch
     networks:
@@ -29,31 +28,44 @@ services:
       - docker_net
     tty: false
     stdin_open: false
+#  kibana:
+#    build:
+#      context: kibana/
+#    ports:
+#      - "5601:5601"
+#    links:
+#      - "elasticsearch_master:elasticsearch"
+#    depends_on:
+#      - elasticsearch_master
+#    networks:
+        #      - docker_net
+  nginx:
+    image: nginx
+    ports:
+      - "9200:9200"
+      - "80:80"
+    volumes:
+      - ./nginx/conf:/etc/nginx
+    networks:
+      - docker_net
+    links:
+      - "elasticsearch_data_1:esd1"
+      - "elasticsearch_master:esm"
   logstash:
     image: logstash:2.3.4
-    command: "-f /etc/logstash/conf.d/ --debug"
-#    command: "-f /etc/logstash/conf.d/"
+#    command: "-f /etc/logstash/conf.d/ --debug"
+    command: "-f /etc/logstash/conf.d/"
     volumes:
       - ./logstash/conf:/etc/logstash/conf.d
     ports:
       - "1984:1984"
     links:
-      - "elasticsearch_data_1:es1"
+      - "nginx:esnginx1"
     networks:
       - docker_net
     depends_on:
-      - elasticsearch_data_1
-  kibana:
-    build:
-      context: kibana/
-    ports:
-      - "5601:5601"
-    links:
-      - "elasticsearch_master:elasticsearch"
-    depends_on:
-      - elasticsearch_master
-    networks:
-      - docker_net
+      - nginx
+
 
 networks:
   docker_net:

@@ -28,17 +28,6 @@ services:
       - docker_net
     tty: false
     stdin_open: false
-#  kibana:
-#    build:
-#      context: kibana/
-#    ports:
-#      - "5601:5601"
-#    links:
-#      - "elasticsearch_master:elasticsearch"
-#    depends_on:
-#      - elasticsearch_master
-#    networks:
-        #      - docker_net
   nginx:
     image: nginx
     ports:
@@ -51,20 +40,57 @@ services:
     links:
       - "elasticsearch_data_1:esd1"
       - "elasticsearch_master:esm"
+  kibana:
+    build:
+      context: kibana/
+    ports:
+      - "5601:5601"
+    links:
+      - "nginx:elasticsearch"
+    depends_on:
+      - nginx
+    networks:
+      - docker_net
+  influxdb:
+    image: influxdb
+    ports:
+      - "8083:8083"
+      - "8086:8086"
+    volumes:
+      - ./influxdb/data:/var/lib/influxdb
+    networks:
+      - docker_net
   logstash:
-    image: logstash:5.1.1
+    build:
+      context: logstash/
 #    command: "-f /etc/logstash/conf.d/ --debug"
     command: "-f /etc/logstash/conf.d/"
     volumes:
       - ./logstash/conf:/etc/logstash/conf.d
     ports:
       - "1984:1984"
+      - "5044:5044"
     links:
       - "nginx:esnginx1"
+      - "influxdb:influxdb"
     networks:
       - docker_net
     depends_on:
       - nginx
+      - influxdb
+  metricbeat:
+    build:
+      context: metricbeat/
+    command: metricbeat -e -v -c /metricbeat/metricbeat.yml 
+    links:
+      - "logstash:logstash"
+    networks:
+      - docker_net
+    volumes:
+      - ./metricbeat/metricbeat.yml:/metricbeat/metricbeat.yml
+    depends_on:
+      - logstash
+
 
 
 networks:

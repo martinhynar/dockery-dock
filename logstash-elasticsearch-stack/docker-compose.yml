@@ -61,6 +61,16 @@ services:
       - ./influxdb/data:/var/lib/influxdb
     networks:
       - docker_net
+  graphite:
+    build:
+      context: graphite/
+    ports:
+      - "8081:80"
+      - "2003:2003"
+    volumes:
+      - ./graphite/data:/opt/graphite/storage/whisper
+    networks:
+      - docker_net
   logstash:
     build:
       context: logstash/
@@ -74,11 +84,13 @@ services:
     links:
       - "nginx:esnginx1"
       - "influxdb:influxdb"
+      - "graphite:graphite"
     networks:
       - docker_net
     depends_on:
       - nginx
       - influxdb
+      - graphite
   metricbeat:
     build:
       context: metricbeat/

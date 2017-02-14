@@ -52,7 +52,8 @@ services:
     networks:
       - docker_net
   influxdb:
-    image: influxdb
+    build:
+      context: influxdb/
     ports:
       - "8083:8083"
       - "8086:8086"
@@ -90,6 +91,19 @@ services:
       - ./metricbeat/metricbeat.yml:/metricbeat/metricbeat.yml
     depends_on:
       - logstash
+  grafana:
+    build:
+      context: grafana/
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./grafana/data:/var/lib/grafana
+    links:
+      - "influxdb:influxdb"
+    networks:
+      - docker_net
+    depends_on:
+      - influxdb
 
 
 

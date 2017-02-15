@@ -15,7 +15,7 @@ metricbeat.modules:
 #------------------------------- System Module -------------------------------
 - module: system
   metricsets:
-    #    - cpu
+    - cpu
     #- load
     #- core
     #- diskio

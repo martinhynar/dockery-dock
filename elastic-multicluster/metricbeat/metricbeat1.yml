@@ -1,0 +1,16 @@
+fields_under_root: true
+
+metricbeat.modules:
+- module: system
+  metricsets:
+    - cpu
+  enabled: true
+  period: 2s
+
+output.elasticsearch:
+  enabled: true
+  hosts: ["es1:9200"]
+  index: "metricbeat-c1-%{+yyyy-MM-dd}"
+
+logging:
+  to_files: true

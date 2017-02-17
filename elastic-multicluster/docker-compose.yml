@@ -1,0 +1,103 @@
+version: '2'
+
+services:
+  es_c1_master:
+    image: elasticsearch:2.4.2
+    command: elasticsearch -Dnode.name=M1 -Dnode.master=1 -Dnode.data=0 -Dcluster.name=c1 -Dnetwork.host=0.0.0.0 -Ddiscovery.zen.minimum_master_nodes=1
+    networks:
+      - docker_net
+  es_c1_data:
+    image: elasticsearch:2.4.2
+    command: elasticsearch -Dnode.name=D1 -Dnode.master=0 -Dnode.data=1 -Ddiscovery.zen.ping.unicast.hosts=es_c1_master -Dcluster.name=c1 -Dnetwork.host=0.0.0.0 
+    ports:
+      - "9201:9200"
+    links:
+      - es_c1_master
+    volumes:
+      - "/opt/elasticsearch/data"
+    networks:
+      - docker_net
+  es_c2_master:
+    image: elasticsearch:2.4.2
+    command: elasticsearch -Dnode.name=M2 -Dnode.master=1 -Dnode.data=0 -Dcluster.name=c2 -Dnetwork.host=0.0.0.0 -Ddiscovery.zen.minimum_master_nodes=1
+    networks:
+      - docker_net
+  es_c2_data:
+    image: elasticsearch:2.4.2
+    command: elasticsearch -Dnode.name=D2 -Dnode.master=0 -Dnode.data=1 -Ddiscovery.zen.ping.unicast.hosts=es_c2_master -Dcluster.name=c2 -Dnetwork.host=0.0.0.0 
+    ports:
+      - "9202:9200"
+    links:
+      - es_c2_master
+    volumes:
+      - "/opt/elasticsearch/data"
+    networks:
+      - docker_net
+  es_tribe:
+    image: elasticsearch:2.4.2
+    command: elasticsearch -Dnode.name=T -Dnode.master=0 -Dnode.data=0  -Dnetwork.host=0.0.0.0 -Dtribe.t1.cluster.name=c1 -Dtribe.t1.discovery.zen.ping.unicast.hosts=es_c1_master -Dtribe.t2.cluster.name=c2 -Dtribe.t2.discovery.zen.ping.unicast.hosts=es_c2_master -Dhttp.cors.enabled=true -Dhttp.cors.allow-origin=*
+    ports:
+      - "9200:9200"
+    links:
+      - es_c1_master
+      - es_c2_master
+    volumes:
+      - "/opt/elasticsearch/data"
+    networks:
+      - docker_net
+    depends_on:
+      - es_c1_master
+      - es_c2_master
+  metricbeat1:
+    build:
+      context: metricbeat/
+    command: metricbeat -e -v -c /metricbeat/metricbeat1.yml 
+    links:
+      - "es_c1_data:es1"
+    networks:
+      - docker_net
+    volumes:
+      - ./metricbeat/metricbeat1.yml:/metricbeat/metricbeat1.yml
+    depends_on:
+      - es_c1_data
+  metricbeat2:
+    build:
+      context: metricbeat/
+    command: metricbeat -e -v -c /metricbeat/metricbeat2.yml 
+    links:
+      - "es_c2_data:es2"
+    networks:
+      - docker_net
+    volumes:
+      - ./metricbeat/metricbeat2.yml:/metricbeat/metricbeat2.yml
+    depends_on:
+      - es_c2_data
+  kibana:
+    image: kibana:4.6.1
+    ports:
+      - "5601:5601"
+    links:
+      - "es_tribe:elasticsearch"
+    depends_on:
+      - es_tribe
+    networks:
+      - docker_net
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./grafana/data:/var/lib/grafana
+    links:
+      - "es_tribe:elasticsearch"
+    networks:
+      - docker_net
+    depends_on:
+      - es_tribe
+
+
+
+
+networks:
+  docker_net:
+    driver: bridge

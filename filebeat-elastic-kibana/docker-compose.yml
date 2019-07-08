@@ -1,0 +1,56 @@
+version: '2'
+
+services:
+  elasticsearch_master:
+    build:
+      context: elasticsearch/
+    command: elasticsearch -Enode.name=M1 -Enode.master=true -Enode.data=false
+    ports:
+      - "9210:9200"
+    volumes:
+      - ./elasticsearch/conf:/etc/elasticsearch
+    networks:
+      - docker_net
+    tty: false
+    stdin_open: false
+  elasticsearch_data:
+    build:
+      context: elasticsearch/
+    command: elasticsearch -Enode.name=D1 -Enode.master=false -Enode.data=true -Ediscovery.zen.ping.unicast.hosts=elasticsearch_master
+    ports:
+      - "9201:9200"
+    links:
+      - elasticsearch_master
+    volumes:
+      - "/opt/elasticsearch/data"
+      - ./elasticsearch/conf:/etc/elasticsearch
+    networks:
+      docker_net:
+        aliases:
+          - elasticsearch
+    tty: false
+    stdin_open: false
+  kibana:
+    image: docker.elastic.co/kibana/kibana:6.2.3
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch_data
+    networks:
+      - docker_net
+  filebeat:
+    build:
+      context: filebeat/
+    command: filebeat -strict.perms=false -e -v -c /filebeat/filebeat.yml
+    networks:
+      - docker_net
+    volumes:
+      - ./filebeat/filebeat.yml:/filebeat/filebeat.yml
+      - ./filebeat/fields.yml:/filebeat/fields.yml
+      - ./filebeat/data/:/filebeat/data/
+    depends_on:
+      - elasticsearch_data
+
+networks:
+  docker_net:
+    driver: bridge

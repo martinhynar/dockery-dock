@@ -1,0 +1,12 @@
+- name: fb
+  type: group
+  description: >
+    Filebeat
+  fields:
+    - name: error
+      type: text
+      description: >
+        Error
+    - name: '@timestamp'
+      type: date
+      format: date_time

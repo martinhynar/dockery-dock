@@ -1,0 +1,65 @@
+version: '2'
+
+services:
+  es_master1:
+    image: elasticsearch:2.4.2
+    command: elasticsearch -Dnode.name=M1 -Dnode.master=1 -Dnode.data=0 -Dnetwork.host=0.0.0.0 -Ddiscovery.zen.ping.unicast.hosts=es_master2 -Ddiscovery.zen.minimum_master_nodes=2
+    networks:
+      - docker_net
+  es_data1:
+    image: elasticsearch:2.4.2
+    command: elasticsearch -Dnode.name=D1 -Dnode.master=0 -Dnode.data=1 -Ddiscovery.zen.ping.unicast.hosts=es_master1 -Dnetwork.host=0.0.0.0
+    ports:
+      - "9201:9200"
+    links:
+      - es_master1
+    volumes:
+      - "/opt/elasticsearch/data"
+    networks:
+      - docker_net
+  es_master2:
+    image: elasticsearch:2.4.2
+    command: elasticsearch -Dnode.name=M2 -Dnode.master=1 -Dnode.data=0 -Dnetwork.host=0.0.0.0 -Ddiscovery.zen.ping.unicast.hosts=es_master1 -Ddiscovery.zen.minimum_master_nodes=2
+    networks:
+      - docker_net
+  es_data2:
+    image: elasticsearch:2.4.2
+    command: elasticsearch -Dnode.name=D2 -Dnode.master=0 -Dnode.data=1 -Ddiscovery.zen.ping.unicast.hosts=es_master2 -Dnetwork.host=0.0.0.0
+    ports:
+      - "9202:9200"
+    links:
+      - es_master2
+    volumes:
+      - "/opt/elasticsearch/data"
+    networks:
+      - docker_net
+  es_search:
+    image: elasticsearch:2.4.2
+    command: elasticsearch -Dnode.name=S -Dnode.master=0 -Dnode.data=0 -Ddiscovery.zen.ping.unicast.hosts=es_master1,es_master2 -Dnetwork.host=0.0.0.0 -Dhttp.cors.enabled=true -Dhttp.cors.allow-origin=*
+    ports:
+      - "9200:9200"
+    links:
+      - es_master1
+      - es_master2
+    volumes:
+      - "/opt/elasticsearch/data"
+    networks:
+      - docker_net
+    depends_on:
+      - es_master1
+      - es_master2
+
+  kibana:
+    image: kibana:4.6.1
+    ports:
+      - "5601:5601"
+    links:
+      - "es_data1:elasticsearch"
+    depends_on:
+      - es_data1
+    networks:
+      - docker_net
+
+networks:
+  docker_net:
+    driver: bridge

@@ -1,0 +1,34 @@
+logging:
+  level: warning
+  to_files: true
+  to_syslog: false
+  files:
+    keepfiles: 3
+
+output:
+  elasticsearch:
+    enabled: true
+    hosts:
+      - "elasticsearch:9200"
+    index: "fb-%{+yyyy.MM.dd}"
+setup:
+  template:
+    name: fb
+    pattern: fb*
+    fields: /filebeat/fields.yml
+    overwrite: true
+    settings:
+      index.number_of_shards: 1
+      index.number_of_replicas: 1
+
+fields_under_root: true
+
+# File scanning
+filebeat.prospectors:
+- input_type: log
+  json.keys_under_root: true
+  json.add_error_key: true
+  json.overwrite_keys: true
+  paths:
+    - /filebeat/data/*
+  fields_under_root: true
